@@ -11,6 +11,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+logs/*
 .DS_Store
 .Python
 build/
