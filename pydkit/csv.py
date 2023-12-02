@@ -73,6 +73,50 @@ def reader(csvfile: Iterable[str], model: Type[T], dialect="excel", **fmtparams)
     return _Reader(csv_reader, model)
 
 
+class DictReader:
+    def __init__(
+        self,
+        f,
+        model: Type[T],
+        fieldnames=None,
+        restkey=None,
+        dialect="excel",
+        *args,
+        **kwds,
+    ):
+        """Mimic the csv.DictReader object
+
+        The fieldnames parameter is a sequence.
+        If fieldnames is omitted, the values in the first row of file `f`
+        will be used as the fieldnames. Regardless of how the fieldnames are determined,
+        the dictionary preserves their original ordering.
+
+        If a row has more fields than fieldnames, the remaining data is put in a list
+        and stored with the fieldname specified by restkey (which defaults to None).
+
+        Because YOU are defining the models with Pydantic,
+        there is no need for `restval` parameter
+
+        All other optional or keyword arguments are passed to the underlying reader instance.
+        """
+        self.dict_reader = csv.DictReader(f, fieldnames=fieldnames, restkey=restkey, dialect=dialect, *args, **kwds)
+        self.model = model
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        raw_row: dict = next(self.dict_reader)
+        try:
+            restkey_value = raw_row.pop("restkey", None)
+        except KeyError:
+            restkey_value = None
+
+        data = self.model(**raw_row).model_dump()
+        if restkey_value is not None:
+            data[self.dict_reader.restkey] = restkey_value
+        return data
+
 class _Reader:
     """Mimic the csv._reader object attributes and behaviour"""
 
