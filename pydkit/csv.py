@@ -1,7 +1,8 @@
-from csv import DictReader, DictWriter
+import csv
+from csv import DictWriter
 from io import StringIO
 from os import PathLike
-from typing import Annotated, Sequence, Type, TypeVar
+from typing import Annotated, Sequence, TypeVar, Iterator, Type, Iterable
 
 import aiofiles
 from asyncer import syncify
@@ -13,11 +14,11 @@ StrNone = Annotated[None, BeforeValidator(lambda v: None if v == "" else v)]
 """turn empty string to None, this is default behavior by csv built in package in python"""
 
 
-def serialize(csv_str: str, model_type: Type[T]) -> list[T]:
-    """Serialize CSV into list of models"""
-    reader = DictReader(csv_str.splitlines())
-    result = [model_type(**row) for row in reader]
-    return result
+# def serialize(csv_str: str, model_type: Type[T]) -> list[T]:
+#     """Serialize CSV into list of models"""
+#     reader = DictReader(csv_str.splitlines())
+#     result = [model_type(**row) for row in reader]
+#     return result
 
 
 def deserialize(models: Sequence[BaseModel]) -> str:
@@ -38,11 +39,11 @@ async def save_async(location: PathLike | str, models: Sequence[BaseModel]) -> N
     return None
 
 
-async def read_async(location: PathLike | str, model_type: Type[T]) -> list[T]:
-    """Create models from to the given location as csv"""
-    async with aiofiles.open(location, mode="r", newline="") as file:
-        result = serialize(await file.read(), model_type)
-        return result
+# async def read_async(location: PathLike | str, model_type: Type[T]) -> list[T]:
+#     """Create models from to the given location as csv"""
+#     async with aiofiles.open(location, mode="r", newline="") as file:
+#         result = serialize(await file.read(), model_type)
+#         return result
 
 
 def save(location: PathLike | str, models: Sequence[BaseModel]) -> None:
