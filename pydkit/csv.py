@@ -91,18 +91,6 @@ class _Reader:
 
         # next raw row
         raw_row = next(self.reader_object)
-        return self._model_to_list_reader(raw_row)
-
-    def _model_to_list_reader(self, raw_row) -> list:
-        """Parse and Validate each row and Return the list of data
-
-        Because the return value of Python `csv.reader` is list,
-        and keeping the API as is, we should return also a list.
-
-        The difference between `csv.reader` and `pydkit.csv.reader` is that
-        the data is parsed and validated with Pydantic and the returning list items,
-        have the expected types.
-        """
         data = self.model(**dict(zip(self.model.model_fields.keys(), raw_row)))
         return list(data.model_dump().values())
 
