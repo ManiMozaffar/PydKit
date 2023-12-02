@@ -18,11 +18,11 @@ class User(BaseModel):
 @pytest.mark.parametrize(
     ["to_write", "expected"],
     [
-        ([1, "Zohre", 30, "female"], [1, "Zohre", 30, "female"]),
-        ([2, "Mahdi", 25, "male"], [2, "Mahdi", 25, "male"]),
-        ([3, "Alice", 25, None], [3, "Alice", 25, None]),
-        ([4, "John", 33, ""], [4, "John", 33, None]),
-        ([5, "Mary", 36], [5, "Mary", 36, None]),
+        (["1", "Zohre", "30", "female"], [1, "Zohre", 30, "female"]),
+        (["2", "Mahdi", 25, "male"], [2, "Mahdi", 25, "male"]),
+        (["3", "Alice", "25.0", None], [3, "Alice", 25, None]),
+        (["4", "John", 33.0, ""], [4, "John", 33, None]),
+        (["5", "Mary", "36"], [5, "Mary", 36, None]),
     ],
 )
 def test_correct_data_reader(to_write, expected):
