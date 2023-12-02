@@ -143,11 +143,17 @@ class _Writer(_Validate):
     def line_num(self):
         return self.writer_object.line_num
 
-    def writerow(self, row: Type[T] | Iterable[str | int | float]):
+    def writerow(self, row: Type[T] | Iterable[str | int | float], *, header=False):
         """Write the row parameter to the writer’s file object
+
+        If you are writing the header, pass header=True to the method.
 
         If the row is not a Pydantic model, it is first validated, then written.
         """
+        if header:
+            self.writer_object.writerow(row)
+            return
+
         if isinstance(row, BaseModel):
             self.writer_object.writerow(row.model_dump().values())
             return
