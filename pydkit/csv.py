@@ -97,6 +97,10 @@ class DictReader:
         self.dict_reader = csv.DictReader(f, fieldnames=fieldnames, restkey=restkey, dialect=dialect, *args, **kwds)
         self.model = model
 
+    @property
+    def fieldnames(self):
+        return self.dict_reader.fieldnames
+
     def __iter__(self):
         return self
 
