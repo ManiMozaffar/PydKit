@@ -60,16 +60,3 @@ def test_dict_reader(to_write, expected):
         with open(tf.name) as csvfile:
             dict_reader = DictReader(csvfile, User)
             assert expected == next(dict_reader)
-
-
-# @pytest.mark.asyncio
-# async def test_csv():
-#     users = [
-#         User(id=1, name="Alice", age=30, gender=None),
-#         User(id=2, name="Abbas", age=30),
-#     ]
-#     await save_async("logs/user.csv", users)
-#     loaded_users = await read_async("logs/user.csv", User)
-#     for idx, user in enumerate(users):
-#         for field in user.model_fields.keys():
-#             assert getattr(user, field) == getattr(loaded_users[idx], field)
