@@ -25,11 +25,47 @@ StrNone = Annotated[None, BeforeValidator(lambda v: None if v == "" else v)]
 #   https://docs.python.org/3/library/csv.html#csv.reader
 #   https://docs.python.org/3/library/csv.html#reader-objects
 
+
 def reader(csvfile: Iterable[str], model: Type[T], dialect="excel", **fmtparams) -> "_Reader":
     """Return a reader object similar to Python `csv._reader`"""
     csv_reader = csv.reader(csvfile, dialect=dialect, **fmtparams)
     return _Reader(csv_reader, model)
 
+
+class _Reader:
+    """Mimic the csv._reader object attributes and behaviour"""
+
+    def __init__(self, csv_reader_object, model: Type[T]):
+        self.reader_object = csv_reader_object
+        self.model = model
+        self._header_shown = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if not self._header_shown:
+            self._header_shown = True
+            return next(self.reader_object)  # header -- doesn't need validation
+
+        # next raw row
+        raw_row = next(self.reader_object)
+        data = self.model(**dict(zip(self.model.model_fields.keys(), raw_row)))
+        return list(data.model_dump().values())
+
+    @property
+    def dialect(self):
+        return self.reader_object.dialect
+
+    @property
+    def line_num(self):
+        return self.reader_object.line_num
+
+
+# csv.DictReader
+# docs:
+#   https://docs.python.org/3/library/csv.html#csv.DictReader
+#   https://docs.python.org/3/library/csv.html#reader-objects
 
 class DictReader:
     def __init__(
@@ -74,36 +110,6 @@ class DictReader:
         if restkey_value is not None:
             data[self.dict_reader.restkey] = restkey_value
         return data
-
-
-class _Reader:
-    """Mimic the csv._reader object attributes and behaviour"""
-
-    def __init__(self, csv_reader_object, model: Type[T]):
-        self.reader_object = csv_reader_object
-        self.model = model
-        self._header_shown = False
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if not self._header_shown:
-            self._header_shown = True
-            return next(self.reader_object)  # header -- doesn't need validation
-
-        # next raw row
-        raw_row = next(self.reader_object)
-        data = self.model(**dict(zip(self.model.model_fields.keys(), raw_row)))
-        return list(data.model_dump().values())
-
-    @property
-    def dialect(self):
-        return self.reader_object.dialect
-
-    @property
-    def line_num(self):
-        return self.reader_object.line_num
 
 
 # def serialize(csv_str: str, model_type: Type[T]) -> list[T]:
