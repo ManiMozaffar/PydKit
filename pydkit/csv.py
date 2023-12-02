@@ -1,5 +1,5 @@
 import csv
-from typing import Annotated, TypeVar, Type, Iterable
+from typing import Annotated, TypeVar, Type, Iterable, Sequence
 
 from pydantic import BaseModel, BeforeValidator
 
@@ -151,31 +151,78 @@ class _Writer(_Validate):
         If the row is not a Pydantic model, it is first validated, then written.
         """
         if header:
-            self.writer_object.writerow(row)
-            return
+            return self.writer_object.writerow(row)
 
         if isinstance(row, BaseModel):
-            self.writer_object.writerow(row.model_dump().values())
-            return
+            return self.writer_object.writerow(row.model_dump().values())
 
         validated = self._validate(row)
         to_write = validated.model_dump().values()
-        self.writer_object.writerow(to_write)
+        return self.writer_object.writerow(to_write)
 
     def writerows(self, rows: Iterable[Type[T]] | Iterable[str | int | float]):
         """Write all elements in rows to the writer’s file object
 
-        If the rows are not a Pydantic models, they are first validated, then written
-        """
+        If the rows are not a Pydantic models, they are first validated, then written"""
         rows = list(rows)
         if isinstance(rows[0], BaseModel):
-            self.writer_object.writerows([row.model_dump().values() for row in rows])
-            return
+            return self.writer_object.writerows([row.model_dump().values() for row in rows])
 
         validated_rows = [self._validate(row) for row in rows]
         to_write = [validated.model_dump().values() for validated in validated_rows]
-        self.writer_object.writerows(to_write)
+        return self.writer_object.writerows(to_write)
 
+
+# csv.DictWriter
+#   https://docs.python.org/3/library/csv.html#csv.DictWriter
+
+
+class DictWriter:
+    def __init__(
+        self,
+        f,
+        fieldnames: Sequence,
+        model: Type[T],
+        dialect="excel",
+        *args,
+        **kwds,
+    ):
+        """Mimic the csv.DictWriter object
+
+         The fieldnames parameter is a sequence of keys that identify
+         the order in which values in the dictionary passed
+         to the writerow() method are written to file f.
+
+        Any other optional or keyword arguments are passed to the underlying writer instance.
+        """
+        self.dict_writer = csv.DictWriter(
+            f, fieldnames=fieldnames, dialect=dialect, *args, **kwds
+        )
+        self.model = model
+
+    def writeheader(self):
+        return self.dict_writer.writeheader()
+
+    def writerow(self, rowdict: Type[T] | dict):
+        """Write the row parameter to the writer’s file object
+
+        If the row is not a Pydantic model, it is first validated, then written."""
+        if isinstance(rowdict, BaseModel):
+            return self.dict_writer.writerow(rowdict.model_dump())
+
+        data = self.model(**rowdict).model_dump()
+        return self.dict_writer.writerow(data)
+
+    def writerows(self, rowdicts: Iterable[Type[T]] | Iterable[dict]):
+        """Write all elements in rows to the writer’s file object
+
+        If the rows are not a Pydantic models, they are first validated, then written"""
+        rowdicts = list(rowdicts)
+        if isinstance(rowdicts[0], BaseModel):
+            return self.dict_writer.writerows([row.model_dump() for row in rowdicts])
+
+        validated_rows = [self.model(row) for row in rowdicts]
+        return self.dict_writer.writerows(validated_rows)
 
 # def serialize(csv_str: str, model_type: Type[T]) -> list[T]:
 #     """Serialize CSV into list of models"""

@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from pydkit.csv import StrNone, reader, DictReader, writer
+from pydkit.csv import StrNone, reader, DictReader, writer, DictWriter
 
 
 class User(BaseModel):
@@ -165,3 +165,67 @@ def test_writer_writerows_raw_row_incorrect_data():
         ]
         with pytest.raises(ValidationError):
             kit_writer.writerows(users)
+
+
+@pytest.mark.parametrize(
+    ["to_write", "expected"],
+    [
+        (
+            User(**{"id": 1, "name": "Zohre", "age": 30, "gender": "female"}),
+            {"id": 1, "name": "Zohre", "age": 30, "gender": "female"},
+        ),
+        (
+            User(**{"id": 2, "name": "Mahdi", "age": 25, "gender": "male"}),
+            {"id": 2, "name": "Mahdi", "age": 25, "gender": "male"},
+        ),
+        (
+            User(**{"id": 3, "name": "Alice", "age": 25, "gender": None}),
+            {"id": 3, "name": "Alice", "age": 25, "gender": None},
+        ),
+        (
+            User(**{"id": 4, "name": "John", "age": 33, "gender": ""}),
+            {"id": 4, "name": "John", "age": 33, "gender": None},
+        ),
+        (User(**{"id": 5, "name": "Mary", "age": 36}), {"id": 5, "name": "Mary", "age": 36, "gender": None}),
+    ],
+)
+def test_dict_writer_model(to_write, expected):
+    """Test pydkit.DictWriter"""
+    with NamedTemporaryFile(mode="w", delete=False) as tf:
+        kit_writer = DictWriter(tf, fieldnames=["id", "name", "age", "gender"], model=User)
+        kit_writer.writeheader()
+        kit_writer.writerow(to_write)
+        tf.close()
+
+        with open(tf.name) as csvfile:
+            dict_reader = DictReader(csvfile, User)
+            assert expected == next(dict_reader)
+
+
+@pytest.mark.parametrize(
+    ["to_write", "expected"],
+    [
+        (
+            {"id": 1, "name": "Zohre", "age": 30, "gender": "female"},
+            {"id": 1, "name": "Zohre", "age": 30, "gender": "female"},
+        ),
+        (
+            {"id": 2, "name": "Mahdi", "age": 25, "gender": "male"},
+            {"id": 2, "name": "Mahdi", "age": 25, "gender": "male"},
+        ),
+        ({"id": 3, "name": "Alice", "age": 25, "gender": None}, {"id": 3, "name": "Alice", "age": 25, "gender": None}),
+        ({"id": 4, "name": "John", "age": 33, "gender": ""}, {"id": 4, "name": "John", "age": 33, "gender": None}),
+        ({"id": 5, "name": "Mary", "age": 36}, {"id": 5, "name": "Mary", "age": 36, "gender": None}),
+    ],
+)
+def test_dict_writer_raw_row(to_write, expected):
+    """Test pydkit.DictWriter"""
+    with NamedTemporaryFile(mode="w", delete=False) as tf:
+        kit_writer = DictWriter(tf, fieldnames=["id", "name", "age", "gender"], model=User)
+        kit_writer.writeheader()
+        kit_writer.writerow(to_write)
+        tf.close()
+
+        with open(tf.name) as csvfile:
+            dict_reader = DictReader(csvfile, User)
+            assert expected == next(dict_reader)
