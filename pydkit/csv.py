@@ -81,6 +81,9 @@ class _Reader:
         self.model = model
         self._header_shown = False
 
+    def __iter__(self):
+        return self
+
     def __next__(self):
         if not self._header_shown:
             self._header_shown = True
