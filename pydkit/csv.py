@@ -143,12 +143,29 @@ class _Writer(_Validate):
     def line_num(self):
         return self.writer_object.line_num
 
-    def writerow(self, row):
+    def writerow(self, row: Type[T] | Iterable[str | int | float]):
+        """Write the row parameter to the writer’s file object
+
+        If the row is not a Pydantic model, it is first validated, then written.
+        """
+        if isinstance(row, BaseModel):
+            self.writer_object.writerow(row.model_dump().values())
+            return
+
         validated = self._validate(row)
-        to_write = list(validated.model_dump().values())
+        to_write = validated.model_dump().values()
         self.writer_object.writerow(to_write)
 
-    def writerows(self, rows):
+    def writerows(self, rows: Iterable[Type[T]] | Iterable[str | int | float]):
+        """Write all elements in rows to the writer’s file object
+
+        If the rows are not a Pydantic models, they are first validated, then written
+        """
+        rows = list(rows)
+        if isinstance(rows[0], BaseModel):
+            self.writer_object.writerows([row.model_dump().values() for row in rows])
+            return
+
         validated_rows = [self._validate(row) for row in rows]
         to_write = [validated.model_dump().values() for validated in validated_rows]
         self.writer_object.writerows(to_write)
