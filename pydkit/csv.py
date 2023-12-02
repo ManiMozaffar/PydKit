@@ -124,6 +124,12 @@ class DictReader:
 #   https://docs.python.org/3/library/csv.html#writer-objects
 
 
+def writer(csvfile, model: Type[T], dialect="excel", **fmtparams):
+    """Return a writer object similar to Python `csv._writer`"""
+    csv_writer = csv.writer(csvfile, dialect=dialect, **fmtparams)
+    return _Writer(csv_writer, model)
+
+
 class _Writer(_Validate):
     def __init__(self, csv_writer_object, model: Type[T]):
         self.writer_object = csv_writer_object
@@ -132,7 +138,7 @@ class _Writer(_Validate):
     @property
     def dialect(self):
         return self.writer_object.dialect
-    
+
     @property
     def line_num(self):
         return self.writer_object.line_num
@@ -146,7 +152,8 @@ class _Writer(_Validate):
         validated_rows = [self._validate(row) for row in rows]
         to_write = [validated.model_dump().values() for validated in validated_rows]
         self.writer_object.writerows(to_write)
-    
+
+
 # def serialize(csv_str: str, model_type: Type[T]) -> list[T]:
 #     """Serialize CSV into list of models"""
 #     reader = DictReader(csv_str.splitlines())
