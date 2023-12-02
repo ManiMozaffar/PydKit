@@ -1,11 +1,6 @@
 import csv
-from csv import DictWriter
-from io import StringIO
-from os import PathLike
-from typing import Annotated, Sequence, TypeVar, Iterator, Type, Iterable
+from typing import Annotated, TypeVar, Type, Iterable
 
-import aiofiles
-from asyncer import syncify
 from pydantic import BaseModel, BeforeValidator
 
 T = TypeVar("T", bound=BaseModel)
@@ -32,7 +27,12 @@ def reader(csvfile: Iterable[str], model: Type[T], dialect="excel", **fmtparams)
     return _Reader(csv_reader, model)
 
 
-class _Reader:
+class _Validate:
+    def _validate(self, row) -> Type[T]:
+        return self.model(**dict(zip(self.model.model_fields.keys(), row)))
+
+
+class _Reader(_Validate):
     """Mimic the csv._reader object attributes and behaviour"""
 
     def __init__(self, csv_reader_object, model: Type[T]):
@@ -50,7 +50,7 @@ class _Reader:
 
         # next raw row
         raw_row = next(self.reader_object)
-        data = self.model(**dict(zip(self.model.model_fields.keys(), raw_row)))
+        data = self._validate(raw_row)
         return list(data.model_dump().values())
 
     @property
@@ -66,6 +66,7 @@ class _Reader:
 # docs:
 #   https://docs.python.org/3/library/csv.html#csv.DictReader
 #   https://docs.python.org/3/library/csv.html#reader-objects
+
 
 class DictReader:
     def __init__(
