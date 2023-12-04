@@ -12,13 +12,14 @@ StrNone = Annotated[None, BeforeValidator(lambda v: None if v == "" else v)]
 # Newer implementation and design decisions to make the pydkit.csv module
 # fully compatible with python standard library `csv` module
 # Almost all the `csv` module APIs will be reserved + some modifications to gain Pydantic features
+# Full description is in the body of the Pull Request
+
 
 # Reader utilities
 
 # csv.reader
 # docs:
 #   https://docs.python.org/3/library/csv.html#csv.reader
-#   https://docs.python.org/3/library/csv.html#reader-objects
 
 
 def reader(csvfile: Iterable[str], model: Type[T], dialect="excel", **fmtparams) -> "_Reader":
@@ -28,8 +29,19 @@ def reader(csvfile: Iterable[str], model: Type[T], dialect="excel", **fmtparams)
 
 
 class _Validate:
-    def _validate(self, row) -> Type[T]:
+    def _validate(self, row: Iterable) -> Type[T]:
+        """Validate an ordered row with the Pydantic model
+
+        Because Pydantic only accepts keyword arguments,
+        we use the `model_fields` attr and create a dictionary out of the row
+
+        Because this line was used this module repeatedly, it is separated out
+        """
         return self.model(**dict(zip(self.model.model_fields.keys(), row)))
+
+
+# docs
+#   https://docs.python.org/3/library/csv.html#reader-objects
 
 
 class _Reader(_Validate):
@@ -65,7 +77,6 @@ class _Reader(_Validate):
 # csv.DictReader
 # docs:
 #   https://docs.python.org/3/library/csv.html#csv.DictReader
-#   https://docs.python.org/3/library/csv.html#reader-objects
 
 
 class DictReader:
@@ -121,13 +132,16 @@ class DictReader:
 
 # csv.writer
 #   https://docs.python.org/3/library/csv.html#csv.writer
-#   https://docs.python.org/3/library/csv.html#writer-objects
 
 
 def writer(csvfile, model: Type[T], dialect="excel", **fmtparams):
     """Return a writer object similar to Python `csv._writer`"""
     csv_writer = csv.writer(csvfile, dialect=dialect, **fmtparams)
     return _Writer(csv_writer, model)
+
+
+# docs
+#   https://docs.python.org/3/library/csv.html#writer-objects
 
 
 class _Writer(_Validate):
@@ -150,7 +164,7 @@ class _Writer(_Validate):
 
         If the row is not a Pydantic model, it is first validated, then written.
         """
-        if header:
+        if header:  # header does not need validation
             return self.writer_object.writerow(row)
 
         if isinstance(row, BaseModel):
@@ -195,9 +209,7 @@ class DictWriter:
 
         Any other optional or keyword arguments are passed to the underlying writer instance.
         """
-        self.dict_writer = csv.DictWriter(
-            f, fieldnames=fieldnames, dialect=dialect, *args, **kwds
-        )
+        self.dict_writer = csv.DictWriter(f, fieldnames=fieldnames, dialect=dialect, *args, **kwds)
         self.model = model
 
     def writeheader(self):
